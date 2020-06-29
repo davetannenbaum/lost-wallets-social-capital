@@ -53,7 +53,7 @@ regress response revgolden_picci i.male i.above40 i.computer i.coworkers i.other
 
 ** Validating Survey Measures of Social Capital
 ** -------------------------------------------
-// OLS estimates with controls
+// OLS estimates with baseline controls
 snapshot restore 1
 generate var_name = ""
 generate coefficient = .
@@ -82,7 +82,7 @@ qqvalue p, method(simes) qvalue(p_FDR) // FDR correction
 list var_name coefficient stderr dof p_FDR, sep(8)
 
 
-// OLS estimates without controls (online appendix)
+// OLS estimates without baseline controls (online appendix)
 snapshot restore 1
 generate var_name = ""
 generate coefficient = .
@@ -178,7 +178,7 @@ local correctedXVar = r(cov_12)
 local correctedCorrelation = `correctedCoefficient' * sqrt(`correctedXVar'/`correctedYVar')
 display "The ORIV Correlation is: `correctedCorrelation'"
 
-// uncorrected correlation (adjusting for baseline covariates)
+// uncorrected correlation (adjusting for baseline controls)
 snapshot restore 1
 keep if trust_justmet != .
 keep if inlist(cond,0,1)
@@ -189,7 +189,7 @@ replace response_resid = response_resid + r(mean)
 collapse trust_general response_resid, by(country)
 pwcorr trust_general response_resid
 
-// ORIV correlation (adjusting for baseline covariates)
+// ORIV correlation (adjusting for baseline controls)
 snapshot restore 1
 separate response, by(cond)
 regress response0 i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(country)
@@ -244,7 +244,7 @@ foreach var of varlist trust_general respect MFQ_genmorality index_guiso GPS_tru
     regress letter_grading `var' wallets, robust
 }
 
-** Dominance Analysis (reqiires 'domin' package)
+** Dominance Analysis (requires 'domin' package)
 ** -------------------------------------------
 snapshot restore 2
 foreach var of varlist trust_general respect MFQ_genmorality index_guiso GPS_trust GPS_altruism GPS_posrecip membership_groups {
