@@ -211,41 +211,49 @@ frame copy data1 data2
 frame copy data3 data4
 frame copy data5 data6
 
-// data1: unrestricted sample (individual-level)
+// snapshot 1: unrestricted sample (individual-level)
 frame change data1
 rename c_GES_email GES_email
 drop c_*
 rename response wallets
+snapshot save
 
-// data2: unrestricted sample (country-level)
+// snapshot 2: unrestricted sample (country-level)
 frame change data2
 drop c_*
 rename response wallets
 collapse wallets log_gdp log_tfp gee letter_grading general_trust general_morality MFQ_genmorality civic_cooperation GPS_trust GPS_posrecip GPS_altruism stranger1 trust_others trust_justmet general_fair general_fair2, by(country Country)
+snapshot save
 
-// data3: restricted sample (individual-level)
+// snapshot 3: restricted sample (individual-level)
 frame change data3
 drop c_*
 rename response wallets
+snapshot save
 
-// data4: restricted sample (country-level)
+// snapshot 4: restricted sample (country-level)
 frame change data4
 drop c_*
 rename response wallets
 collapse wallets log_gdp log_tfp gee letter_grading general_trust general_morality MFQ_genmorality civic_cooperation GPS_trust GPS_posrecip GPS_altruism stranger1 trust_others trust_justmet general_fair general_fair2, by(country Country)
+snapshot save
 
-// data5: sample using most proximate EVS/WVS wave (individual-level)
+// snapshot 5: sample using most proximate EVS/WVS wave (individual-level)
 frame change data5
 rename c_GES_email GES_email
 drop c_*
 rename response wallets
+snapshot save
 
-// data6: sample using most proximate EVS/WVS wave (country-level)
+// snapshot 6: sample using most proximate EVS/WVS wave (country-level)
 frame change data6
 drop c_*
 rename response wallets
 collapse wallets log_gdp log_tfp gee letter_grading general_trust general_morality MFQ_genmorality civic_cooperation GPS_trust GPS_posrecip GPS_altruism stranger1 trust_others trust_justmet general_fair general_fair2, by(country Country)
+snapshot save
 
+// set data1 as the default frame
+frame change data1
 
 // setting graph style (requires `grstyle' package)
 grstyle clear
@@ -270,27 +278,12 @@ grstyle gsize axis_title medium
 grstyle gsize tick zero
 grstyle clockdir title_position 12
 
-// taking snapshots of data
-frame change data1
-snapshot save
-frame change data2
-snapshot save
-frame change data3
-snapshot save
-frame change data4
-snapshot save
-frame change data5
-snapshot save
-frame change data6
-snapshot save
-
 ** ---------------------------------------------------------------------
 ** Analyses Reported in Main Paper
 ** ---------------------------------------------------------------------
 
 ** Figure 1: Wallet Reporting Rates and Dishonesty
 ** -------------------------------------------
-frame change data1
 snapshot restore 1
 keep if Country == "USA"
 merge m:1 city using "corruption_usa.dta"
@@ -310,25 +303,11 @@ twoway (scatter wallet index_usa) (lfit wallet index_usa), ///
 
 snapshot restore 1
 keep if Country == "Italy"
+decode city, gen(City)
+merge m:1 City using "tv_tax.dta"
+drop _merge
 merge m:1 city using "corruption_italy.dta"
 rename corruption_index golden_picci
-generate tv_TaxEvasion = .
-replace tv_TaxEvasion = 75.741867 if City == "Bari"
-replace tv_TaxEvasion = 67.609756 if City == "Bologna"
-replace tv_TaxEvasion = 41.82111 if City == "Catania"
-replace tv_TaxEvasion = 69.881958 if City == "Firenze"
-replace tv_TaxEvasion = 77.650955 if City == "Genova"
-replace tv_TaxEvasion = 60.016186 if City == "Messina"
-replace tv_TaxEvasion = 60.305145 if City == "Milano"
-replace tv_TaxEvasion = 38.30178 if City == "Napoli"
-replace tv_TaxEvasion = 63.72583 if City == "Padova"
-replace tv_TaxEvasion = 44.61322 if City == "Palermo"
-replace tv_TaxEvasion = 72.778252 if City == "Roma"
-replace tv_TaxEvasion = 73.931519 if City == "Taranto"
-replace tv_TaxEvasion = 64.474731 if City == "Torino"
-replace tv_TaxEvasion = 69.651314 if City == "Trieste"
-replace tv_TaxEvasion = 73.845474 if City == "Venezia"
-replace tv_TaxEvasion = 66.68821 if City == "Verona"
 revrs tv_TaxEvasion
 revrs golden_picci
 pca revtv_TaxEvasion rap_nr revgolden_picci, components(1)
@@ -346,29 +325,25 @@ twoway (scatter wallet index_italy) (lfit wallet index_italy), ///
 		name(w2, replace)
 
 graph combine w1 w2, xsize(5) ysize(4) cols(2)
-graph export figure1.pdf, replace
 
 ** Figure 2: Coverage of Lost Wallet Data
 ** (requires `spmap' package)
 ** -------------------------------------------
-frame change data1
 snapshot restore 1
 use "https://www.stathelp.se/data/GIS/idfile.dta", clear
 gen sampled = 0
 replace sampled = 1 if inlist(country_id,37,67,19,66,72,110,154,157,158,76,77,7,164,37,39,56,169,82,121,40,177,3,90,91,185,186,30,17,21,190,11,198,8,96,5,6,49,99,207,101,20)
 spmap sampled using "coord_mercator_world.dta", ///
 	id(na_id_world) ///
-	fcolor(gs14 ebblue) ///
+	fcolor(gs14 gs10) ///
 	osize(vvthin vvthin vvthin vvthin) ///
 	ndsize(vvthin) ///
 	legend(off)
 
 ** Figure 3: Wallet Reporting Rates and Measures of Social Capital
 ** -------------------------------------------
-frame change data1
-snapshot restore 1
+snapshot restore 2
 grstyle clockdir title_position 11
-frames change data2
 pwcorr  wallet general_trust, obs
 twoway 	(scatter wallet general_trust) (lfit wallet general_trust), ///
 		title("{bf: A}") ///
@@ -385,7 +360,7 @@ pwcorr 	wallet GPS_trust, obs
 twoway 	(scatter wallet GPS_trust) (lfit wallet GPS_trust), ///
 		title("{bf: B}") ///
 		xtitle("GPS Trust", size(medsmall)) ///
-		ytitle("Wallet Reporting Rate (%)", size(medsmall)) ///
+		ytitle("", size(medsmall)) ///
 		ylabel(0(20)100, angle(horizontal)) ///
 		xlabel(-3(1)3) ///
 		text(98 -.2 "{it:r} = 0.024", place(w)) ///
@@ -397,7 +372,7 @@ pwcorr 	wallet general_morality, obs
 twoway 	(scatter wallet general_morality) (lfit wallet general_morality), ///
 		title("{bf: C}") ///
 		xtitle("Generalized Morality", size(medsmall)) ///
-		ytitle("Wallet Reporting Rate (%)", size(medsmall)) ///
+		ytitle("", size(medsmall)) ///
 		ylabel(0(20)100, angle(horizontal)) ///
 		xlabel(-3(1)3) ///
 		text(98 -.2 "{it:r} = 0.612", place(w)) ///
@@ -409,7 +384,7 @@ pwcorr 	wallet MFQ_genmorality, obs
 twoway 	(scatter wallet MFQ_genmorality) (lfit wallet MFQ_genmorality), ///
 		title("{bf: D}") ///
 		xtitle("Universal Moral Values", size(medsmall)) ///
-		ytitle("Wallet Reporting Rate (%)", size(medsmall)) ///
+		ytitle("", size(medsmall)) ///
 		ylabel(0(20)100, angle(horizontal)) ///
 		xlabel(-3(1)3) ///
 		text(98 -.2 "{it:r} = 0.461", place(w)) ///
@@ -433,7 +408,7 @@ pwcorr 	wallet GPS_posrecip, obs
 twoway 	(scatter wallet GPS_posrecip) (lfit wallet GPS_posrecip), ///
 		title("{bf: F}") ///
 		xtitle("Positive Reciprocity (GPS)", size(medsmall)) ///
-		ytitle("Wallet Reporting Rate (%)", size(medsmall)) ///
+		ytitle("", size(medsmall)) ///
 		ylabel(0(20)100, angle(horizontal)) ///
 		xlabel(-3(1)3) ///
 		text(98 -.2 "{it:r} = 0.050", place(w)) ///
@@ -445,7 +420,7 @@ pwcorr 	wallet GPS_altruism, obs
 twoway 	(scatter wallet GPS_altruism) (lfit wallet GPS_altruism), ///
 		title("{bf: G}") ///
 		xtitle("Altruism (GPS)", size(medsmall)) ///
-		ytitle("Wallet Reporting Rate (%)", size(medsmall)) ///
+		ytitle("", size(medsmall)) ///
 		ylabel(0(20)100, angle(horizontal)) ///
 		xlabel(-3(1)3) ///
 		text(98 -.2 "{it:r} = -.214", place(w)) ///
@@ -457,7 +432,7 @@ pwcorr  wallet stranger1, obs
 twoway 	(scatter wallet stranger1) (lfit wallet stranger1), ///
 		title("{bf: H}") ///
 		xtitle("Return Lost Item", size(medsmall)) ///
-		ytitle("Wallet Reporting Rate (%)", size(medsmall)) ///
+		ytitle("", size(medsmall)) ///
 		ylabel(0(20)100, angle(horizontal)) ///
 		xlabel(-3(1)3) ///
 		text(98 -.2 "{it:r} = 0.645", place(w)) ///
@@ -466,11 +441,9 @@ twoway 	(scatter wallet stranger1) (lfit wallet stranger1), ///
 		name(g8, replace)
 		
 graph combine g1 g2 g3 g4 g5 g6 g7 g8, xsize(6) ysize(4) cols(4)
-graph export figure3.pdf, replace
 
 ** OLS Coefficients for Survey Measures and Wallet Reporting Rates
 ** -------------------------------------------
-frame change data1
 snapshot restore 1
 generate var_name = ""
 generate coefficient = .
@@ -500,7 +473,6 @@ list var_name coefficient stderr N_countries p_FDR, sep(8)
 
 ** Table 2: Predictive Value of Wallet Reporting Rates
 ** -------------------------------------------
-frame change data2
 snapshot restore 2
 ereplace wallet = std(wallet)
 foreach var of varlist general_trust GPS_trust general_morality MFQ_genmorality civic_cooperation GPS_posrecip GPS_altruism stranger1 {
@@ -513,12 +485,11 @@ foreach var of varlist general_trust GPS_trust general_morality MFQ_genmorality 
 	quietly eststo: regress gee `var' wallets, robust
 	quietly eststo: regress letter_grading `var', robust
 	quietly eststo: regress letter_grading `var' wallets, robust
-	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) r2(3) aux(se 3)
+	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) nostar r2(3) aux(se 3)
 }
 
 ** Table 2 FDR adjusted p-values
 ** -------------------------------------------
-frame change data2
 snapshot restore 2
 ereplace wallet = std(wallet)
 local i = 1
@@ -560,12 +531,13 @@ forvalues i = 1/64 {
     append using `"`tf`i''"'
 }
 drop if parm == "_cons"
+generate N_countries = dof + 1 
 qqvalue p, method(simes) qvalue(p_FDR)
-list idnum parm estimate stderr dof t p_FDR, sep(3)
+format estimate stderr p_FDR %9.3f
+list idnum parm estimate stderr N_countries p_FDR, sep(3)
 
-** Dominance Analysis (requires `domin' package)
+** Dominance Analysis (requires `domin' and `ereplace' packages)
 ** -------------------------------------------
-frame change data2
 snapshot restore 2
 ereplace wallet = std(wallet)
 foreach var of varlist general_trust GPS_trust general_morality MFQ_genmorality civic_cooperation GPS_posrecip GPS_altruism stranger1 {
@@ -584,13 +556,11 @@ foreach var of varlist general_trust GPS_trust general_morality MFQ_genmorality 
 ** -------------------------------------------
 
 * Legal Regulations for Lost Property (analysis 1)
-frame change data1
 snapshot restore 1
 keep if Country == "USA"
 regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.r_PL_propertylaw, cluster(city)
 
 * Legal Regulations for Lost Property (analysis 2)
-frame change data1
 snapshot restore 1
 keep if Country == "USA"
 regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(city)
@@ -605,20 +575,18 @@ collapse corrected uncorrected, by(city)
 spearman uncorrected corrected
 
 * Cross-Country Variation in Legal Traditions (analysis 1)
-frame change data1
 snapshot restore 1
 merge m:1 Country using "juriglobe.dta"
-regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.FEE_civil_law, cluster(city)
+regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.FEE_civil_law, cluster(country)
 
 * Cross-Country Variation in Legal Traditions (analysis 2)
-frame change data1
 snapshot restore 1
 merge m:1 Country using "juriglobe.dta"
-regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(city)
+regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(country)
 predict uncorrected, residual
 summarize wallets
 replace uncorrected = uncorrected + r(mean)
-regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.FEE_civil_law, cluster(city)
+regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.FEE_civil_law, cluster(country)
 predict corrected, residual
 summarize wallets
 replace corrected = corrected + r(mean)
@@ -626,12 +594,11 @@ collapse corrected uncorrected, by(country)
 spearman uncorrected corrected
 
 * Fear of Detection: Security Cameras (analysis 1)
-frame change data1
 snapshot restore 1
 areg wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.security_cam, absorb(city) robust
+regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond i.security_cam, cluster(city)
 
 * Fear of Detection: Security Cameras (analysis 2)
-frame change data1
 snapshot restore 1
 drop if missing(security_cam)
 regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(city)
@@ -650,12 +617,10 @@ collapse corrected uncorrected, by(city)
 spearman uncorrected corrected
 
 * Fear of Detection: Other Witnesses (analysis 1)
-frame change data1
 snapshot restore 1
 areg wallets i.male i.above40 i.computer i.institution i.cond i.coworkers i.other_bystanders, absorb(city) robust
 
 * Fear of Detection: Other Witnesses (analysis 2)
-frame change data1
 snapshot restore 1
 drop if missing(other_bystanders)
 drop if missing(coworkers)
@@ -675,7 +640,6 @@ collapse corrected uncorrected, by(city)
 spearman uncorrected corrected
 
 * Differences in Email Usage (analysis 1)
-frame change data1
 snapshot restore 1
 regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.cond, cluster(city) robust
 predict full_sample, residual
@@ -690,7 +654,6 @@ collapse full_sample hotels, by(country)
 spearman full_sample hotels
 
 * Differences in Email Usage (analysis 2)
-frame change data1
 snapshot restore 1
 drop if missing(GES_email)
 regress wallets i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(city)
@@ -705,7 +668,6 @@ collapse corrected uncorrected, by(country)
 spearman uncorrected corrected
 
 * Returning the Wallet but Pocketing the Money 
-frame change data1
 snapshot restore 1
 keep if inlist(cond,0,1)
 separate wallets, by(cond)
@@ -720,7 +682,6 @@ ranksum amount_ratio, by(country)
 ** -------------------------------------------
 
 * Table A1: Wallet Reporting Rates and Dishonesty (USA)
-frame change data1
 snapshot restore 1
 keep if Country == "USA"
 merge m:1 city using "corruption_usa.dta"
@@ -735,28 +696,13 @@ regress wallets r_CFS_eitcbunching_rate i.male i.above40 i.computer i.coworkers 
 regress wallets r_SIM_convictions_ppe i.male i.above40 i.computer i.coworkers i.other_bystanders i.institution i.cond, cluster(city)
 
 * Table A2: Wallet Reporting Rates and Dishonesty (Italy)
-frame change data1
 snapshot restore 1
 keep if Country == "Italy"
+decode city, gen(City)
+merge m:1 City using "tv_tax.dta"
+drop _merge
 merge m:1 city using "corruption_italy.dta"
 rename corruption_index golden_picci
-generate tv_TaxEvasion = .
-replace tv_TaxEvasion = 75.741867 if City == "Bari"
-replace tv_TaxEvasion = 67.609756 if City == "Bologna"
-replace tv_TaxEvasion = 41.82111 if City == "Catania"
-replace tv_TaxEvasion = 69.881958 if City == "Firenze"
-replace tv_TaxEvasion = 77.650955 if City == "Genova"
-replace tv_TaxEvasion = 60.016186 if City == "Messina"
-replace tv_TaxEvasion = 60.305145 if City == "Milano"
-replace tv_TaxEvasion = 38.30178 if City == "Napoli"
-replace tv_TaxEvasion = 63.72583 if City == "Padova"
-replace tv_TaxEvasion = 44.61322 if City == "Palermo"
-replace tv_TaxEvasion = 72.778252 if City == "Roma"
-replace tv_TaxEvasion = 73.931519 if City == "Taranto"
-replace tv_TaxEvasion = 64.474731 if City == "Torino"
-replace tv_TaxEvasion = 69.651314 if City == "Trieste"
-replace tv_TaxEvasion = 73.845474 if City == "Venezia"
-replace tv_TaxEvasion = 66.68821 if City == "Verona"
 revrs tv_TaxEvasion
 revrs golden_picci
 pca revtv_TaxEvasion rap_nr revgolden_picci, components(1)
@@ -775,7 +721,6 @@ regress wallets revgolden_picci i.male i.above40 i.computer i.coworkers i.other_
 ** -------------------------------------------
 
 * Table A3: Country-level Pairwise Correlations
-frame change data2
 snapshot restore 2
 pwcorr general_trust GPS_trust general_morality MFQ_genmorality civic_cooperation GPS_posrecip GPS_altruism
 
@@ -783,7 +728,6 @@ pwcorr general_trust GPS_trust general_morality MFQ_genmorality civic_cooperatio
 ** -------------------------------------------
 
 * Table A4: Survey Measures and Wallet Reporting Rates
-frame change data1
 snapshot restore 1
 generate var_name = ""
 generate coefficient = .
@@ -812,13 +756,11 @@ format coefficient stderr p_FDR %9.3f
 list var_name coefficient stderr N_countries p_FDR, sep(8)
 
 * Figure A2: OLS vs. Probit Estimates (requires `coefplot' package)
-frame change data1
 snapshot restore 1
 grstyle graphsize x 6
 grstyle graphsize y 3
 grstyle yesno legend_force_nodraw no
-frame change data1
-snapshot restore 1
+
 eststo clear
 gen wallets2 = wallets
 replace wallets2 = 1 if wallets2 == 100
@@ -843,7 +785,6 @@ coefplot (est9, offset(.1)  mlabposition(12)) (est10, offset(-.1) mfcolor(white)
 grc1leg g1 g2, legendfrom(g1)
 
 * Figure A3: OLS Estimates With Controls vs. Without Controls (requires `coefplot' package)
-frame change data1
 snapshot restore 1
 grstyle graphsize x 6
 grstyle graphsize y 3
@@ -870,7 +811,6 @@ grc1leg g1 g2, legendfrom(g1)
 ** -------------------------------------------
 
 * Figure A4: Wallet Reporting Rates and Measures of Social Capital (All Waves vs One Wave)
-frame change data2
 snapshot restore 2
 xframeappend data6, generate(restricted)
 grstyle graphsize x 3
@@ -970,7 +910,6 @@ restore
 graph combine g1 g2 g3 g4 g5 g6, xsize(3.5) ysize(6) cols(2)
 
 * Table A5: Predictive Value of Wallet Reporting Rates (One Wave Per Country)
-frame change data6
 snapshot restore 6
 ereplace wallet = std(wallet)
 foreach var of varlist general_trust general_morality civic_cooperation {
@@ -983,11 +922,10 @@ foreach var of varlist general_trust general_morality civic_cooperation {
 	quietly eststo: regress gee `var' wallets, robust
 	quietly eststo: regress letter_grading `var', robust
 	quietly eststo: regress letter_grading `var' wallets, robust
-	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) r2(3) aux(se 3)
+	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) r2(3) nostar aux(se 3)
 }
 
 * Table A5 FDR correction
-frame change data6
 snapshot restore 6
 ereplace wallet = std(wallet)
 local i = 1
@@ -1029,14 +967,15 @@ forvalues i = 1/24 {
     append using `"`tf`i''"'
 }
 drop if parm == "_cons"
+generate N_countries = dof + 1 
 qqvalue p, method(simes) qvalue(p_FDR)
-list idnum parm estimate stderr dof t p_FDR, sep(3)
+format estimate stderr p_FDR %9.3f
+list idnum parm estimate stderr N_countries p_FDR, sep(3)
 
 ** Section 8. Robustness Test: Restricting EVS/WVS Respondents to More Closely Match Lost Wallet Data
 ** -------------------------------------------
 
 * OLS Coefficients (Restricted Sample)
-frame change data3
 snapshot restore 3
 generate var_name = ""
 generate coefficient = .
@@ -1061,10 +1000,10 @@ keep var_name coefficient stderr dof p
 drop if missing(var_name)
 generate N_countries = dof + 1 
 qqvalue p, method(simes) qvalue(p_FDR) svalue(s) rvalue(r) rank(rank)
+format coefficient stderr p_FDR %9.3f
 list var_name coefficient stderr N_countries p_FDR, sep(8)
 
 * Figure A5: Wallet Reporting Rates and Measures of Social Capital (Full vs Restricted Sample). Requires `xframeappend' package
-frame change data2
 snapshot restore 2
 xframeappend data4, generate(restricted)
 grstyle graphsize x 3
@@ -1164,7 +1103,6 @@ restore
 graph combine g1 g2 g3 g4 g5 g6, xsize(3.5) ysize(6) cols(2)
 
 * Table A6: Predictive Value of Wallet Reporting Rates (Restricted Sample)
-frame change data4
 snapshot restore 4
 ereplace wallet = std(wallet)
 foreach var of varlist general_trust general_morality civic_cooperation {
@@ -1177,11 +1115,10 @@ foreach var of varlist general_trust general_morality civic_cooperation {
 	quietly eststo: regress gee `var' wallets, robust
 	quietly eststo: regress letter_grading `var', robust
 	quietly eststo: regress letter_grading `var' wallets, robust
-	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) r2(3) aux(se 3)
+	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) nostar r2(3) aux(se 3)
 }
 
 * Table A6 FDR correction
-frame change data4
 snapshot restore 4
 ereplace wallet = std(wallet)
 local i = 1
@@ -1223,14 +1160,15 @@ forvalues i = 1/24 {
     append using `"`tf`i''"'
 }
 drop if parm == "_cons"
+generate N_countries = dof + 1 
 qqvalue p, method(simes) qvalue(p_FDR)
-list idnum parm estimate stderr dof t p_FDR, sep(3)
+format estimate stderr p_FDR %9.3f
+list idnum parm estimate stderr N_countries p_FDR, sep(3)
 
 ** Section 9. Robustness Test: Excluding China and Kazakhstan
 ** -------------------------------------------
 
 * Figure A6: Wallet Reporting Rates and Measures of Social Capital (Excluding China and Kazakhstan)
-frames change data2
 snapshot restore 2
 grstyle graphsize x 3
 grstyle graphsize y 4
@@ -1336,7 +1274,6 @@ twoway 	(scatter wallet stranger1) (lfit wallet stranger1), ///
 graph combine g1 g2 g3 g4 g5 g6 g7 g8, xsize(6) ysize(4) cols(4)
 
 * Table A7: Predictive Value of Wallet Reporting Rates (Excluding China and Kazakhstan)
-frames change data2
 snapshot restore 2
 keep if ~inlist(Country,"China","Kazakhstan")
 ereplace wallet = std(wallet)
@@ -1350,11 +1287,10 @@ foreach var of varlist general_trust GPS_trust general_morality MFQ_genmorality 
 	quietly eststo: regress gee `var' wallets, robust
 	quietly eststo: regress letter_grading `var', robust
 	quietly eststo: regress letter_grading `var' wallets, robust
-	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) r2(3) aux(se 3)
+	esttab est1 est2 est3 est4 est5 est6 est7 est8, drop(_cons) nostar r2(3) aux(se 3)
 }
 
 * Table A7 FDR adjusted p-values
-frames change data2
 snapshot restore 2
 keep if ~inlist(Country,"China","Kazakhstan")
 ereplace wallet = std(wallet)
@@ -1397,13 +1333,14 @@ forvalues i = 1/64 {
     append using `"`tf`i''"'
 }
 drop if parm == "_cons"
+generate N_countries = dof + 1 
 qqvalue p, method(simes) qvalue(p_FDR)
-list idnum parm estimate stderr dof t p_FDR, sep(3)
+format estimate stderr p_FDR %9.3f
+list idnum parm estimate stderr N_countries p_FDR, sep(3)
 
 ** Section 10. Correcting for Measurement Error
 ** -------------------------------------------
 * uncorrected correlation
-frame change data1
 snapshot restore 1
 drop if trust_justmet == .
 keep if inlist(cond,0,1)
@@ -1444,7 +1381,6 @@ display "The ORIV Correlation is: `correctedCorrelation'"
 
 ** Section 11. Dominance Analysis (requires `domin' package)
 ** -------------------------------------------
-frame change data2
 snapshot restore 2
 ereplace wallet = std(wallet)
 foreach var of varlist general_trust GPS_trust general_morality MFQ_genmorality civic_cooperation GPS_posrecip GPS_altruism stranger1 {
